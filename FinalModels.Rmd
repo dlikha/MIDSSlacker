@@ -1,0 +1,66 @@
+---
+title: "FinalModels"
+output: html_notebook
+---
+
+
+```{r}
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(stargazer)
+
+data <- read.csv("/Users/darya/Desktop/Instructor_Reply_Demos.csv", header = TRUE)
+```
+
+```{r}
+#Converting message send and reply times to POSIXct
+#as.POSIX*: Date-time Conversion Functions
+data$message_1_send <- mdy_hm(data$message_1_send)
+data$message_1_reply <- mdy_hm(data$message_1_reply)
+
+data$message_2_send <- mdy_hm(data$message_2_send)
+data$message_2_reply <- mdy_hm(data$message_2_reply)
+
+data$message_3_send <- mdy_hm(data$message_3_send)
+data$message_3_reply <- mdy_hm(data$message_3_reply)
+
+data$message_4_send <- mdy_hm(data$message_4_send)
+data$message_4_reply <- mdy_hm(data$message_4_reply)
+```
+
+```{r}
+data$message_1_response_time <- as.numeric(difftime(data$message_1_reply, data$message_1_send, units = "hours"))
+data$message_2_response_time <- as.numeric(difftime(data$message_2_reply, data$message_2_send, units = "hours"))
+data$message_3_response_time <- as.numeric(difftime(data$message_3_reply, data$message_3_send, units = "hours"))
+data$message_4_response_time <- as.numeric(difftime(data$message_4_reply, data$message_4_send, units = "hours"))
+```
+
+
+```{r}
+models <- list()
+
+for(i in 1:4) {
+    response_time_col <- paste0("message_", i, "_response_time")
+    message_col <- paste0("message_", i)
+    teammate_col <- paste0("message_", i, "_sender")
+
+    # Filtering out: no reply + late replies (more than 48 hours)
+    filtered_data <- data %>%
+        filter(!is.na(.[[response_time_col]]), 
+               .[[response_time_col]] <= 48) 
+
+    # work hour (1/0), teammate, and foundational course
+    formula <- as.formula(paste(response_time_col, "~", message_col, "+ as.factor(", teammate_col, ") + foundational_course"))
+    models[[i]] <- lm(formula, data = filtered_data)
+}
+
+stargazer(models, type = "text", header = FALSE, title = "Regression Results for Messages")
+```
+
+
+
+
+
+
+
